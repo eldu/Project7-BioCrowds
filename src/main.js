@@ -17,7 +17,21 @@ function onLoad(framework) {
   camera.position.set(1, 1, 200);
   camera.lookAt(new THREE.Vector3(0,0,0));
 
-  // scene.add();
+
+  // Plane
+  var planeGeo = new THREE.PlaneGeometry(1000, 1000);
+  var planeMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide});
+  var planeMesh = new THREE.Mesh(planeGeo, planeMaterial);
+  planeMesh.rotateX(90);
+  scene.add(planeMesh);
+
+  // TEST OBJECTS DELETE ONCE DONE
+  // Origin
+  var geometry = new THREE.SphereGeometry( 5, 32, 32 );
+  var material = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+  var sphere = new THREE.Mesh( geometry, material );
+  sphere.position.set(0, 0, 0);
+  scene.add( sphere );
 
   // edit params and listen to changes like this
   // more information here: https://workshop.chromeexperiments.com/examples/gui/#1--Basic-Usage
