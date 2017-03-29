@@ -1,9 +1,10 @@
-
 const THREE = require('three'); // older modules are imported like this. You shouldn't have to worry about this much
 require('three-lut')
 
 import Framework from './framework'
 import Agent from './agent'
+
+const INFINITY = 1.7976931348623157E+10308;
 
 var prevTime = new Date();
 var currentTime = new Date();
@@ -31,8 +32,11 @@ var gridCellHeight;
 var agents = [];
 var goals = [];
 var gridcells = [];
+var lookedAt = []; // TODO: 
 
-var what = true;
+const WHITE = new THREE.Color("rgb(255, 255, 255)"); 
+const RED = new THREE.Color("rgb(255, 0, 0)");
+
 
 // called after the scene loads
 function onLoad(framework) {
@@ -80,24 +84,11 @@ function onLoad(framework) {
   gridCellWidth = planeX / gridX;
   gridCellHeight = planeY / gridY;
 
-  // TEST OBJECTS DELETE ONCE DONE
-  // Origin
-  // var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  // var material = new THREE.MeshLambertMaterial( {color: 0xff0000} );
-  // var sphere = new THREE.Mesh( geometry, material );
-  // sphere.position.set(0, 0.5, 0);
-  // scene.add( sphere );
+  var goalGeometry = new THREE.CylinderGeometry(7, 7, 25, 32);
+  var agentGeometry = new THREE.CylinderGeometry(1, 1, 1);
 
-    var goalGeometry = new THREE.CylinderGeometry(7, 7, 25, 32);
-    var agentGeometry = new THREE.CylinderGeometry(1, 1, 1);
-
-
-  // var geometry = new THREE.CylinderGeometry( 5, 5, 20, 32 );
-  // var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
-  // var cylinder = new THREE.Mesh( geometry, material );
-  // scene.add( cylinder );
   // Splat Markers
-  // splatMarkers(scene);
+  splatMarkers(scene);
 
   // Agents
   for (var i = 0.0; i < options.numAgents; i++) {
@@ -108,7 +99,7 @@ function onLoad(framework) {
     goal.position.set(750.0 - i * 50.0, 0, 900.0);
 
     var position = new THREE.Vector3(250.0 + i * 50.0, 50.0, 10.0)
-    agents.push(new Agent(goal, material, position));
+    agents.push(new Agent(goal, material, position, gridCellWidth, gridCellHeight));
   }
 
   for (var i = 0; i < options.numAgents; i++) {
@@ -133,15 +124,14 @@ function splatMarkers(scene) {
 
     // One Grid Cell
     var geometry = new THREE.Geometry();
-    var colors = [];
     for (var j = 0; j < options.numMarkersPerCell; j++) {
       geometry.vertices.push(
         new THREE.Vector3(x * gridCellWidth +  Math.random() * gridCellWidth,
                           0,
                           y * gridCellHeight + Math.random() * gridCellHeight));
-      var color = lookupTable.getColor(i / (gridX * gridY));
-      geometry.colors.push(color);
+      geometry.colors.push(WHITE.clone());
     }
+    
     var material = new THREE.PointsMaterial( { size: 5.0, vertexColors: THREE.VertexColors});
     var mesh = new THREE.Points(geometry, material);
     gridcells.push(mesh);
@@ -149,17 +139,73 @@ function splatMarkers(scene) {
   }
 }
 
+function getGridCellByIdx(i, j) {
+  if (i < 0 || j < 0 || i > gridX || j > gridY) {
+    return -1;
+  }
+
+  return i * gridX + j;
+}
+
 // called on frame updates
 function onUpdate(framework) {
   prevTime = currentTime;
   currentTime = new Date();
-
   deltaTime.setScalar(1.0 / (currentTime - prevTime));
 
   if (agents.length > 0) {
+    // Reset Everything
+    lookedAt = []; // reset
+    for (var a = 0; a < options.numAgents; a++) {
+      for (var m = 0; m < agents[a].markers.length; m++) {
+        agents[a].markers[m].geo.colors[agents[a].markers[m].mark].set(WHITE.clone);
+      }
+      agents[a].markers = [];
+    }
+
+    for (var lost = 0; lost < gridcells.length; lost++) {
+      gridcells[lost].geometry.colorsNeedUpdate = true;
+    }
+
+
+    // TODO: Clean up this
+    for (var a = 0; a < options.numAgents; a++) {
+      var idx = getGridCellByIdx(agents[a].i, agents[a].j);
+      helper(a, idx);
+      idx = getGridCellByIdx(agents[a].i - 1, agents[a].j);
+      helper(a, idx);
+      idx = getGridCellByIdx(agents[a].i, agents[a].j - 1);
+      helper(a, idx);
+      idx = getGridCellByIdx(agents[a].i - 1, agents[a].j - 1);
+      helper(a, idx);
+    }
+
     for (var i = 0; i < options.numAgents; i++) {
       agents[i].update(deltaTime);
     }
+  }
+}
+
+function helper(a, idx) {
+    if (idx > 0 ) {//&& !lookedAt[idx]) {
+    for (var m = 0; m < gridcells[idx].geometry.vertices.length; m++) {
+        var min = gridCellWidth * 2.0;
+        var marker = gridcells[idx].geometry.vertices[m];
+
+        var c = agents[a]; // Current Agent
+
+        for (var b = a; b < options.numAgents; b++) {
+          var temp = marker.distanceTo(agents[b].position);
+          if (temp < min) {
+            c = agents[b];
+            min = temp;
+          }
+        }
+        gridcells[idx].geometry.colors[m].set(c.material.color);
+        c.markers.push({geo: gridcells[idx].geometry, mark: m});
+    }
+
+      gridcells[idx].geometry.colorsNeedUpdate=true;
   }
 }
 
