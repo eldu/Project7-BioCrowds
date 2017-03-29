@@ -72,21 +72,10 @@ export default class Agent {
 			velSum.add(toMarkers[n].multiplyScalar(weights[n] / sumWeight));
 		}
 
-
-
-
-
-
-
-
-		// toGoal.clampLength(0.0, this.maxSpeed);
-		// sum.add(toGoal);
-
-		// var len = sum.length();
-		// sum.normalize()
-
-		// sum.multiplyScalar(Math.min(len, this.maxSpeed));
-
+		// Slight Jiggle
+		if (velSum.length < 0.01) {
+			velSum.x = 0.01;
+		}
 		this.velocity = velSum;
 
 

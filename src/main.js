@@ -12,7 +12,8 @@ var deltaTime = new THREE.Vector3(0.0, 0.0, 0.0);
 
 var options = {
   numAgents: 10,
-  numMarkersPerCell: 30
+  numMarkersPerCell: 30,
+  scene: 'circle'
 }
 
 // Color Look Up Table
@@ -84,36 +85,80 @@ function onLoad(framework) {
   gridCellWidth = planeX / gridX;
   gridCellHeight = planeY / gridY;
 
-  var goalGeometry = new THREE.CylinderGeometry(7, 7, 25, 32);
-  var agentGeometry = new THREE.CylinderGeometry(1, 1, 1);
+
 
   // Splat Markers
   splatMarkers(scene);
-
-  // Agents
-  for (var i = 0.0; i < options.numAgents; i++) {
-    var color = lookupTable.getColor(i / options.numAgents);
-    var material = new THREE.MeshLambertMaterial({color: color});
-    
-    var goal = new THREE.Mesh(goalGeometry, material);
-    goal.position.set(750.0 - i * 50.0, 0, 900.0);
-
-    var position = new THREE.Vector3(250.0 + i * 50.0, 50.0, 10.0)
-    agents.push(new Agent(goal, material, position, gridCellWidth, gridCellHeight));
-  }
-
-  for (var i = 0; i < options.numAgents; i++) {
-    scene.add(agents[i].mesh);
-    scene.add(agents[i].goal);
-  }
+  buildScene(scene);
 
   // edit params and listen to changes like this
   // more information here: https://workshop.chromeexperiments.com/examples/gui/#1--Basic-Usage
   gui.add(camera, 'fov', 0, 180).onChange(function(newVal) {
     camera.updateProjectionMatrix();
   });
+
+  gui.add(options, 'scene', [ 'lines', 'circle']).onChange(function(newVal) {
+    buildScene(scene);
+  });
+
 }
 
+
+function buildScene(scene) {
+   if (agents.length > 0) {
+    for (var i = 0; i < agents.length; i++) {
+      scene.remove(agents[i].mesh);
+      scene.remove(agents[i].goal);
+    }
+    agents = [];
+  }
+
+  if (options.scene == 'lines') {
+    // Agents
+    var goalGeometry = new THREE.CylinderGeometry(7, 7, 25, 32);
+    for (var i = 0.0; i < options.numAgents; i++) {
+      var color = lookupTable.getColor(i / options.numAgents);
+      var material = new THREE.MeshLambertMaterial({color: color});
+      
+      var goal = new THREE.Mesh(goalGeometry, material);
+      goal.position.set(750.0 - i * 70.0, 0, 900.0);
+
+      var position = new THREE.Vector3(250.0 + i * 70.0, 50.0, 10.0)
+      agents.push(new Agent(goal, material, position, gridCellWidth, gridCellHeight));
+    }
+
+    for (var i = 0; i < options.numAgents; i++) {
+      scene.add(agents[i].mesh);
+      scene.add(agents[i].goal);
+    }
+  } 
+  else if (options.scene == 'circle') {
+    var circleGeo = new THREE.CircleGeometry(400, 20);
+    var circleMat = new THREE.MeshBasicMaterial( { color: 0xffff00 } );
+    var circle = new THREE.Mesh( circleGeo, circleMat );
+    //circle.rotateX(-Math.PI / 2.0);
+    //circle.position.set(500, 0, 500);
+    // scene.add(circle);
+
+    for (var i = 0; i < 20; i++) {
+      var color = lookupTable.getColor(i / 20);
+      var material = new THREE.MeshLambertMaterial({color: color});
+      
+      var goal = new THREE.Mesh(goalGeometry, material);
+      var goalV = circleGeo.vertices[(i + 10) % 20 + 1];
+      goal.position.set(goalV.x + 500, 0.0, goalV.y + 500);
+
+      var cirv = circleGeo.vertices[i + 1];
+      var position = new THREE.Vector3(cirv.x + 500, 0.0, cirv.y + 500);
+      agents.push(new Agent(goal, material, position, gridCellWidth, gridCellHeight));
+    }
+
+    for (var i = 0; i < options.numAgents; i++) {
+      scene.add(agents[i].mesh);
+      scene.add(agents[i].goal);
+    }
+  }
+}
 
 function splatMarkers(scene) {
   gridcells = [];
