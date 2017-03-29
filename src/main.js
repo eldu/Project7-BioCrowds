@@ -1,21 +1,35 @@
 
 const THREE = require('three'); // older modules are imported like this. You shouldn't have to worry about this much
+require('three-lut')
+
 import Framework from './framework'
+import agent from './agent'
 
 var startTime = new Date();
 var currentTime = new Date();
 
 var options = {
-  numAgents: 10
-  // lookX: 0,
-  // lookY: 0,
-  // lookZ: 0,
-  // rotX: 0,
-  // rotY: 0,
-  // rotZ: 0
+  numAgents: 10,
+  numMarkersPerCell: 30
 }
 
-var agents = {};
+// Color Look Up Table
+const colors = 100;
+const mode = 'rainbow';
+const lookupTable = new THREE.Lut(mode, colors);
+
+const gridX = 10.0;
+const gridY = 10.0;
+
+const planeX = 1000.0;
+const planeY = 1000.0;
+
+var gridCellWidth;
+var gridCellHeight;
+
+var agents = [];
+var goals = [];
+var gridcells = [];
 
 // called after the scene loads
 function onLoad(framework) {
@@ -24,8 +38,6 @@ function onLoad(framework) {
   var renderer = framework.renderer;
   var gui = framework.gui;
   var stats = framework.stats;
-
-  //renderer.setClearColor (0xbac2d1, 1);
 
   // initialize a simple box and material
   var directionalLight = new THREE.DirectionalLight( 0xffffff, 1 );
@@ -40,37 +52,43 @@ function onLoad(framework) {
 
 
   // Voronoi Diagram Plane
-  var planeGeo = new THREE.PlaneGeometry(1000, 1000);
-  // var planeMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide});
-  var planeMaterial = new THREE.ShaderMaterial({
-    uniforms: {
-      u_amount: {
-        type: "f",
-        value: 1.0
-      },
-      u_albedo: {
-        type: 'v3',
-        value: new THREE.Color('#ffffff')
-      }
-    },
-    vertexShader: require('./shaders/voronoi-vert.glsl'),
-    fragmentShader: require('./shaders/voronoi-frag.glsl')
-  });
+  var planeGeo = new THREE.PlaneGeometry(planeX, planeY, gridX, gridY);
+  var planeMaterial = new THREE.MeshBasicMaterial( {color: 0xffffff, side: THREE.DoubleSide, wireframe: true});
+  // var planeMaterial = new THREE.ShaderMaterial({
+  //   uniforms: {
+  //     u_amount: {
+  //       type: "f",
+  //       value: 1.0
+  //     },
+  //     u_albedo: {
+  //       type: 'v3',
+  //       value: new THREE.Color('#ffffff')
+  //     }
+  //   },
+  //   vertexShader: require('./shaders/voronoi-vert.glsl'),
+  //   fragmentShader: require('./shaders/voronoi-frag.glsl')
+  // });
   var planeMesh = new THREE.Mesh(planeGeo, planeMaterial);
   planeMesh.rotateX(-Math.PI / 2.0);
   planeMesh.position.set(500, 0, 500);
   scene.add(planeMesh);
 
+  // Update Grid Cell Widths and Heights
+  gridCellWidth = planeX / gridX;
+  gridCellHeight = planeY / gridY;
+
   // TEST OBJECTS DELETE ONCE DONE
   // Origin
-  var geometry = new THREE.BoxGeometry( 1, 1, 1 );
-  var material = new THREE.MeshLambertMaterial( {color: 0xff0000} );
-  var sphere = new THREE.Mesh( geometry, material );
-  sphere.position.set(0, 0.5, 0);
-  scene.add( sphere );
+  // var geometry = new THREE.BoxGeometry( 1, 1, 1 );
+  // var material = new THREE.MeshLambertMaterial( {color: 0xff0000} );
+  // var sphere = new THREE.Mesh( geometry, material );
+  // sphere.position.set(0, 0.5, 0);
+  // scene.add( sphere );
 
-  // Add agents to the scene
 
+  var goalGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1);
+
+  splatMarkers(scene);
 
 
 
@@ -85,31 +103,39 @@ function onLoad(framework) {
   gui.add(camera, 'fov', 0, 180).onChange(function(newVal) {
     camera.updateProjectionMatrix();
   });
-
-  // gui.add(options, 'lookX', -5, 100).onChange(function(newVal) {
-  //   camera.lookAt(new THREE.Vector3(options.lookX, options.lookY, options.lookZ));
-  // });
-  // gui.add(options, 'lookY', -5, 100).onChange(function(newVal) {
-  //   camera.lookAt(new THREE.Vector3(options.lookX, options.lookY, options.lookZ));
-  // });
-  // gui.add(options, 'lookZ', -5, 100).onChange(function(newVal) {
-  //   camera.lookAt(new THREE.Vector3(options.lookX, options.lookY, options.lookZ));
-  // });
-
-  // gui.add(options, 'rotX', -2 * Math.PI, 2 * Math.PI).onChange(function(newVal) {
-  //   planeMesh.rotation.set(options.rotX, options.rotY, options.rotZ);
-  // });
-  // gui.add(options, 'rotY', -2 * Math.PI, 2 * Math.PI).onChange(function(newVal) {
-  //   planeMesh.rotation.set(options.rotX, options.rotY, options.rotZ);
-  // });
-  // gui.add(options, 'rotZ', -2 * Math.PI, 2 * Math.PI).onChange(function(newVal) {
-  //   planeMesh.rotation.set(options.rotX, options.rotY, options.rotZ);
-  // });
-
 }
 
 
+function splatMarkers(scene) {
+  gridcells = [];
+
+  for (var i = 0.0; i < gridX * gridY; i++) {
+    var x = Math.floor(i / gridX);
+    var y = i - gridX * x;
+
+    // One Grid Cell
+    var geometry = new THREE.Geometry();
+    var colors = [];
+    for (var j = 0; j < options.numMarkersPerCell; j++) {
+      geometry.vertices.push(
+        new THREE.Vector3(x * gridCellWidth +  Math.random() * gridCellWidth,
+                          0,
+                          y * gridCellHeight + Math.random() * gridCellHeight));
+      var color = lookupTable.getColor(i / (gridX * gridY));
+      geometry.colors.push(color);
+    }
+    var material = new THREE.PointsMaterial( { size: 5.0, vertexColors: THREE.VertexColors});
+    var mesh = new THREE.Points(geometry, material);
+    gridcells.push(mesh);
+    scene.add(mesh);
+  }
+}
+
 function populate(n) {
+    // Add agents to the scene
+  for (var i = 0; i < numAgents; i++) {
+      //agents.add(agent())
+  }
 
 }
 
