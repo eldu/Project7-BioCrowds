@@ -44,6 +44,29 @@ export default class Agent {
 		this.i = Math.floor((this.position.x + 0.5 * this.gridCellWidth) / this.gridCellWidth);
 		this.j = Math.floor((this.position.z + 0.5 * this.gridCellWidth) / this.gridCellHeight);
 
+		var sum = new THREE.Vector3(0.0, 0.0, 0.0);
+		for (var m = 0; m < this.markers.length; m++) {
+			sum.add(this.markers[m].geo.vertices[this.markers[m].mark]);
+			sum.sub(this.position);
+		}
+
+
+
+		var toGoal = new THREE.Vector3(0.0, 0.0, 0.0);
+		toGoal.add(this.goal.position);
+		toGoal.sub(this.position);
+		toGoal.clamp(0.0, this.maxSpeed);
+		sum.add(toGoal);
+
+		var len = sum.length();
+		sum.normalize()
+		sum.multiplyScalar(Math.min(len, this.maxSpeed));
+
+
+
+		this.velocity = sum;
+
+
 		this.position.add(this.v3.multiplyVectors(this.velocity, deltaTime));
 		this.mesh.position.set(this.position.x, this.position.y, this.position.z);
 	};

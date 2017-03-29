@@ -199,7 +199,7 @@ function onUpdate(framework) {
 function helper(a, idx) {
     if (idx > 0 ) {//&& !lookedAt[idx]) {
     for (var m = 0; m < gridcells[idx].geometry.vertices.length; m++) {
-        var min = gridCellWidth;
+        var min = 50;
         var marker = gridcells[idx].geometry.vertices[m];
 
         var c; // Current Agent
