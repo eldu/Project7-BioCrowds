@@ -44,27 +44,50 @@ export default class Agent {
 		this.i = Math.floor((this.position.x + 0.5 * this.gridCellWidth) / this.gridCellWidth);
 		this.j = Math.floor((this.position.z + 0.5 * this.gridCellWidth) / this.gridCellHeight);
 
+		var toGoal = new THREE.Vector3(0.0, 0.0, 0.0);
+		toGoal.add(this.goal.position);
+		toGoal.sub(this.position);
+
 		var sum = new THREE.Vector3(0.0, 0.0, 0.0);
+		var sumWeight = 0.0;
+		var theta;
+		var weight;
+		
+		var weights = [];
+		var toMarkers = [];
 		for (var m = 0; m < this.markers.length; m++) {
-			sum.add(this.markers[m].geo.vertices[this.markers[m].mark]);
-			sum.sub(this.position);
+			var toMarker = new THREE.Vector3(0.0, 0.0, 0.0);
+			toMarker.add(this.markers[m].geo.vertices[this.markers[m].mark]);
+			toMarker.sub(this.position);
+
+			theta = toGoal.angleTo(toMarker);
+			weight = (1.0 + Math.cos(theta)) / (1 + toMarker.length());
+			sumWeight += weight;
+			weights.push(weight);
+			toMarkers.push(toMarker);
+		}
+
+		var velSum = new THREE.Vector3(0.0, 0.0, 0.0);
+		for (var n = 0; n < this.markers.length; n++) {
+			velSum.add(toMarkers[n].multiplyScalar(weights[n] / sumWeight));
 		}
 
 
 
-		var toGoal = new THREE.Vector3(0.0, 0.0, 0.0);
-		toGoal.add(this.goal.position);
-		toGoal.sub(this.position);
-		toGoal.clamp(0.0, this.maxSpeed);
-		sum.add(toGoal);
-
-		var len = sum.length();
-		sum.normalize()
-		sum.multiplyScalar(Math.min(len, this.maxSpeed));
 
 
 
-		this.velocity = sum;
+
+
+		// toGoal.clampLength(0.0, this.maxSpeed);
+		// sum.add(toGoal);
+
+		// var len = sum.length();
+		// sum.normalize()
+
+		// sum.multiplyScalar(Math.min(len, this.maxSpeed));
+
+		this.velocity = velSum;
 
 
 		this.position.add(this.v3.multiplyVectors(this.velocity, deltaTime));

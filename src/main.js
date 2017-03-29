@@ -159,7 +159,6 @@ function onUpdate(framework) {
     for (var a = 0; a < options.numAgents; a++) {
       for (var m = 0; m < agents[a].markers.length; m++) {
         agents[a].markers[m].geo.colors[agents[a].markers[m].mark].set(WHITE.clone());
-        // console.log(agents[a].markers[m].geo.colors[agents[a].markers[m].mark]);
       }
 
       agents[a].markers = [];
