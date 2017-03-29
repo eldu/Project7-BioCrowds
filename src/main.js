@@ -3,7 +3,7 @@ const THREE = require('three'); // older modules are imported like this. You sho
 require('three-lut')
 
 import Framework from './framework'
-import agent from './agent'
+import Agent from './agent'
 
 var startTime = new Date();
 var currentTime = new Date();
@@ -85,11 +85,35 @@ function onLoad(framework) {
   // sphere.position.set(0, 0.5, 0);
   // scene.add( sphere );
 
+    var goalGeometry = new THREE.CylinderGeometry(7, 7, 25, 32);
+    var agentGeometry = new THREE.CylinderGeometry(1, 1, 1);
 
-  var goalGeometry = new THREE.CylinderGeometry(0.1, 0.1, 1);
 
-  splatMarkers(scene);
+  // var geometry = new THREE.CylinderGeometry( 5, 5, 20, 32 );
+  // var material = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+  // var cylinder = new THREE.Mesh( geometry, material );
+  // scene.add( cylinder );
+  // Splat Markers
+  // splatMarkers(scene);
 
+  // Agents
+  for (var i = 0.0; i < options.numAgents; i++) {
+    var color = lookupTable.getColor(i / options.numAgents);
+    var material = new THREE.MeshLambertMaterial({color: color});
+    
+    var goal = new THREE.Mesh(goalGeometry, material);
+    goal.position.set(750.0 - i * 50.0, 0, 900.0);
+
+    var position = new THREE.Vector3(250.0 + i * 50.0, 50.0, 10.0)
+    // console.log(position);
+    agents.push(new Agent(goal, material, position));
+  }
+
+  for (var i = 0; i < options.numAgents; i++) {
+    scene.add(agents[i].mesh);
+    //console.log(agents[i].mesh.position);
+    scene.add(agents[i].goal);
+  }
 
 
 
@@ -131,13 +155,13 @@ function splatMarkers(scene) {
   }
 }
 
-function populate(n) {
-    // Add agents to the scene
-  for (var i = 0; i < numAgents; i++) {
-      //agents.add(agent())
-  }
+// function populate(n) {
+//     // Add agents to the scene
+//   for (var i = 0; i < numAgents; i++) {
+//       //agents.add(agent())
+//   }
 
-}
+// }
 
 // called on frame updates
 function onUpdate(framework) {
