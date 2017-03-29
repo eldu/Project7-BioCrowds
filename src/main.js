@@ -5,8 +5,9 @@ require('three-lut')
 import Framework from './framework'
 import Agent from './agent'
 
-var startTime = new Date();
+var prevTime = new Date();
 var currentTime = new Date();
+var deltaTime = new THREE.Vector3(0.0, 0.0, 0.0);
 
 var options = {
   numAgents: 10,
@@ -30,6 +31,8 @@ var gridCellHeight;
 var agents = [];
 var goals = [];
 var gridcells = [];
+
+var what = true;
 
 // called after the scene loads
 function onLoad(framework) {
@@ -105,22 +108,13 @@ function onLoad(framework) {
     goal.position.set(750.0 - i * 50.0, 0, 900.0);
 
     var position = new THREE.Vector3(250.0 + i * 50.0, 50.0, 10.0)
-    // console.log(position);
     agents.push(new Agent(goal, material, position));
   }
 
   for (var i = 0; i < options.numAgents; i++) {
     scene.add(agents[i].mesh);
-    //console.log(agents[i].mesh.position);
     scene.add(agents[i].goal);
   }
-
-
-
-
-
-
-
 
   // edit params and listen to changes like this
   // more information here: https://workshop.chromeexperiments.com/examples/gui/#1--Basic-Usage
@@ -155,17 +149,18 @@ function splatMarkers(scene) {
   }
 }
 
-// function populate(n) {
-//     // Add agents to the scene
-//   for (var i = 0; i < numAgents; i++) {
-//       //agents.add(agent())
-//   }
-
-// }
-
 // called on frame updates
 function onUpdate(framework) {
+  prevTime = currentTime;
+  currentTime = new Date();
 
+  deltaTime.setScalar(1.0 / (currentTime - prevTime));
+
+  if (agents.length > 0) {
+    for (var i = 0; i < options.numAgents; i++) {
+      agents[i].update(deltaTime);
+    }
+  }
 }
 
 // when the scene is done initializing, it will call onLoad, then on frame updates, call onUpdate
