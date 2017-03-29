@@ -5,6 +5,18 @@ import Framework from './framework'
 var startTime = new Date();
 var currentTime = new Date();
 
+var options = {
+  numAgents: 10
+  // lookX: 0,
+  // lookY: 0,
+  // lookZ: 0,
+  // rotX: 0,
+  // rotY: 0,
+  // rotZ: 0
+}
+
+var agents = {};
+
 // called after the scene loads
 function onLoad(framework) {
   var scene = framework.scene;
@@ -23,8 +35,8 @@ function onLoad(framework) {
   scene.add(directionalLight);
 
   // set camera position
-  camera.position.set(1, 50, 200);
-  camera.lookAt(new THREE.Vector3(-1, -1, -1));
+  camera.position.set(500, 1000, 500);
+  camera.lookAt(new THREE.Vector3(500, 0, 500));
 
 
   // Voronoi Diagram Plane
@@ -46,6 +58,7 @@ function onLoad(framework) {
   });
   var planeMesh = new THREE.Mesh(planeGeo, planeMaterial);
   planeMesh.rotateX(-Math.PI / 2.0);
+  planeMesh.position.set(500, 0, 500);
   scene.add(planeMesh);
 
   // TEST OBJECTS DELETE ONCE DONE
@@ -56,13 +69,47 @@ function onLoad(framework) {
   sphere.position.set(0, 0.5, 0);
   scene.add( sphere );
 
-  // scene.add(new THREE.AmbientLight(0xFFFFFF));
+  // Add agents to the scene
+
+
+
+
+
+
+
+
+
 
   // edit params and listen to changes like this
   // more information here: https://workshop.chromeexperiments.com/examples/gui/#1--Basic-Usage
   gui.add(camera, 'fov', 0, 180).onChange(function(newVal) {
     camera.updateProjectionMatrix();
   });
+
+  // gui.add(options, 'lookX', -5, 100).onChange(function(newVal) {
+  //   camera.lookAt(new THREE.Vector3(options.lookX, options.lookY, options.lookZ));
+  // });
+  // gui.add(options, 'lookY', -5, 100).onChange(function(newVal) {
+  //   camera.lookAt(new THREE.Vector3(options.lookX, options.lookY, options.lookZ));
+  // });
+  // gui.add(options, 'lookZ', -5, 100).onChange(function(newVal) {
+  //   camera.lookAt(new THREE.Vector3(options.lookX, options.lookY, options.lookZ));
+  // });
+
+  // gui.add(options, 'rotX', -2 * Math.PI, 2 * Math.PI).onChange(function(newVal) {
+  //   planeMesh.rotation.set(options.rotX, options.rotY, options.rotZ);
+  // });
+  // gui.add(options, 'rotY', -2 * Math.PI, 2 * Math.PI).onChange(function(newVal) {
+  //   planeMesh.rotation.set(options.rotX, options.rotY, options.rotZ);
+  // });
+  // gui.add(options, 'rotZ', -2 * Math.PI, 2 * Math.PI).onChange(function(newVal) {
+  //   planeMesh.rotation.set(options.rotX, options.rotY, options.rotZ);
+  // });
+
+}
+
+
+function populate(n) {
 
 }
 
