@@ -158,9 +158,12 @@ function onUpdate(framework) {
     lookedAt = []; // reset
     for (var a = 0; a < options.numAgents; a++) {
       for (var m = 0; m < agents[a].markers.length; m++) {
-        agents[a].markers[m].geo.colors[agents[a].markers[m].mark].set(WHITE.clone);
+        agents[a].markers[m].geo.colors[agents[a].markers[m].mark].set(WHITE.clone());
+        // console.log(agents[a].markers[m].geo.colors[agents[a].markers[m].mark]);
       }
+
       agents[a].markers = [];
+
     }
 
     for (var lost = 0; lost < gridcells.length; lost++) {
@@ -172,12 +175,19 @@ function onUpdate(framework) {
     for (var a = 0; a < options.numAgents; a++) {
       var idx = getGridCellByIdx(agents[a].i, agents[a].j);
       helper(a, idx);
+      lookedAt[idx] = true;
+
       idx = getGridCellByIdx(agents[a].i - 1, agents[a].j);
       helper(a, idx);
+      lookedAt[idx] = true;
+
       idx = getGridCellByIdx(agents[a].i, agents[a].j - 1);
       helper(a, idx);
+      lookedAt[idx] = true;
+
       idx = getGridCellByIdx(agents[a].i - 1, agents[a].j - 1);
       helper(a, idx);
+      lookedAt[idx] = true;
     }
 
     for (var i = 0; i < options.numAgents; i++) {
@@ -189,20 +199,23 @@ function onUpdate(framework) {
 function helper(a, idx) {
     if (idx > 0 ) {//&& !lookedAt[idx]) {
     for (var m = 0; m < gridcells[idx].geometry.vertices.length; m++) {
-        var min = gridCellWidth * 2.0;
+        var min = gridCellWidth;
         var marker = gridcells[idx].geometry.vertices[m];
 
-        var c = agents[a]; // Current Agent
+        var c; // Current Agent
 
         for (var b = a; b < options.numAgents; b++) {
-          var temp = marker.distanceTo(agents[b].position);
+          var temp = marker.distanceTo(agents[b].position) - 20;
           if (temp < min) {
             c = agents[b];
             min = temp;
           }
         }
-        gridcells[idx].geometry.colors[m].set(c.material.color);
-        c.markers.push({geo: gridcells[idx].geometry, mark: m});
+
+        if (c) {
+          gridcells[idx].geometry.colors[m].set(c.material.color);
+          c.markers.push({geo: gridcells[idx].geometry, mark: m});
+        }
     }
 
       gridcells[idx].geometry.colorsNeedUpdate=true;
